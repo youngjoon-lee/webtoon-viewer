@@ -28,13 +28,18 @@
 
       <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav mr-auto">
-          <li>
+          <li class="nav-item">
             <input id="file-input" type="file" classd="form-control-file" multiple>
           </li>
-          <li>
+          <li class="nav-item">
             Width:&nbsp;<input id="width-input" type="text">&nbsp;px
           </li>
         </ul>
+
+        <form class="form-inline">
+          <button class="btn btn-outline-success" type="button" id="btn-top">Top</button>
+          <button class="btn btn-outline-success" type="button" id="btn-bottom">Bottom</button>
+        </form>
       </div>
     </nav>
   </header>
@@ -121,4 +126,13 @@
 
   document.querySelector('#file-input').addEventListener("change", previewImages, false);
   document.querySelector('#width-input').addEventListener("keyup", resizeWidths, false);
+
+  document.querySelector('#btn-top').addEventListener("click", function () {
+    document.body.scrollTop = 0; // For Safari
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera 
+  }, false);
+  document.querySelector('#btn-bottom').addEventListener("click", function () {
+    document.body.scrollTop = document.body.scrollHeight; // For Safari
+    document.documentElement.scrollTop = document.documentElement.scrollHeight; // For Chrome, Firefox, IE and Opera 
+  }, false);
 </script>
