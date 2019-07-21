@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+</head>
+
+<body>
+  <input id="file-input" type="file" multiple><br><br>
+  width: <input id="width-input" type="text"> px
+  <br><br>
+  <div id="preview"></div>
+</body>
+
+</html>
+
+<script type="text/javascript">
+  var order = 0;
+
+  function previewImages() {
+    var preview = document.getElementById('preview');
+    while (preview.hasChildNodes()) {
+      preview.removeChild( preview.firstChild );
+    }
+
+    for (var i = 0 ; i < this.files.length ; i++) {
+      var div = document.createElement("div");
+      div.setAttribute("id", this.files[i].name);
+      preview.appendChild(div);
+      previewImage(this.files[i])
+    }
+  }
+
+  function previewImage(file) {
+    // Make sure `file.name` matches our extensions criteria
+    if (!/\.(jpe?g|png|gif)$/i.test(file.name)) {
+      return alert(file.name + " is not an image");
+    } // else...
+
+    var reader = new FileReader();
+
+    reader.addEventListener("load", function() {
+      var div = document.getElementById(file.name);
+      var image = new Image();
+      image.title  = file.name;
+      image.src    = this.result;
+
+      var widthInput = document.getElementById("width-input")
+      if (widthInput.value) {
+        image.width  = widthInput.value;
+      }
+
+      div.appendChild(image);
+    }, false);
+
+    reader.readAsDataURL(file);
+  }
+
+  function resizeWidths(event) {
+    if (event.keyCode === 13) { // Enter key pressed
+      var widthInput = document.getElementById("width-input")
+      var preview = document.getElementById("preview");
+      var children = preview.children;
+
+      for (var i = 0; i < children.length; i++) {
+        var image = children[i].firstChild
+        if (widthInput.value) {
+          image.width = widthInput.value
+        } else {
+          var newImage = new Image();
+          newImage.title = image.title;
+          newImage.src = image.src;
+
+          children[i].replaceChild(newImage, image);
+        }
+      }
+    }
+  }
+
+  document.querySelector('#file-input').addEventListener("change", previewImages, false);
+  document.querySelector('#width-input').addEventListener("keyup", resizeWidths, false);
+</script>
