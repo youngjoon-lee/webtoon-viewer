@@ -39,6 +39,7 @@
         <form class="form-inline">
           <button class="btn btn-outline-success" type="button" id="btn-top">Top</button>
           <button class="btn btn-outline-success" type="button" id="btn-bottom">Bottom</button>
+          <button class="btn btn-outline-success" type="button" id="btn-merge">Merge</button>
         </form>
       </div>
     </nav>
@@ -205,6 +206,38 @@
     };
   })();
 
+  // Reference: https://zocada.com/compress-resize-images-javascript-browser/
+  function mergeImagesDisplayed() {
+    var images = document.getElementById('images');
+    var children = images.children;
+
+    var maxWidth = 0;
+    var totalHeight = 0;
+    for (var i = 0; i < children.length; i++) {
+      var image = children[i].firstChild;
+      if (maxWidth < image.width) {
+        maxWidth = image.width;
+      }
+      totalHeight += image.height;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = maxWidth;
+    canvas.height = totalHeight;
+
+    const ctx = canvas.getContext('2d');
+    var y = 0;
+    for (var i = 0; i < children.length; i++) {
+      var image = children[i].firstChild;
+      ctx.drawImage(image, 0, y, image.width, image.height);
+      y += image.height;
+    }
+
+    ctx.canvas.toBlob((blob) => {
+      window.open(URL.createObjectURL(blob));
+    }, 'image/png', 1);
+  }
+
   document.querySelector('#file-input').addEventListener("change", fileInputChanged, false);
   document.querySelector('#width-input').addEventListener("keyup", resizeWidths, false);
 
@@ -216,4 +249,6 @@
     document.body.scrollTop = document.body.scrollHeight; // For Safari
     document.documentElement.scrollTop = document.documentElement.scrollHeight; // For Chrome, Firefox, IE and Opera 
   }, false);
+
+  document.querySelector('#btn-merge').addEventListener("click", mergeImagesDisplayed, false);
 </script>
