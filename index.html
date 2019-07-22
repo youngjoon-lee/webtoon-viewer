@@ -29,7 +29,7 @@
       <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav mr-auto">
           <li class="nav-item">
-            <input id="file-input" type="file" classd="form-control-file" multiple>
+            <input id="file-input" type="file" class="form-control-file" multiple>
           </li>
           <li class="nav-item">
             Width:&nbsp;<input id="width-input" type="text">&nbsp;px
@@ -44,7 +44,7 @@
     </nav>
   </header>
 
-  <div id="preview"></div>
+  <div id="images"></div>
 
   <!-- Optional JavaScript -->
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -57,57 +57,111 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
     integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
     crossorigin="anonymous"></script>
+
+  <script type="text/javascript" src="/lib/zip.js"></script>
+  <script type="text/javascript" src="/lib/zip-ext.js"></script>
+  <script type="text/javascript" src="/lib/z-worker.js"></script>
 </body>
 
 </html>
 
 <script type="text/javascript">
+  zip.workerScriptsPath = "/lib/";
+
   var order = 0;
 
-  function previewImages() {
-    var preview = document.getElementById('preview');
-    while (preview.hasChildNodes()) {
-      preview.removeChild(preview.firstChild);
-    }
-
-    for (var i = 0; i < this.files.length; i++) {
-      var div = document.createElement("div");
-      div.setAttribute("id", this.files[i].name);
-      preview.appendChild(div);
-      previewImage(this.files[i])
+  function clearImages() {
+    var images = document.getElementById('images');
+    while (images.hasChildNodes()) {
+      images.removeChild(images.firstChild);
     }
   }
 
-  function previewImage(file) {
-    // Make sure `file.name` matches our extensions criteria
-    if (!/\.(jpe?g|png|gif)$/i.test(file.name)) {
-      return alert(file.name + " is not an image");
-    } // else...
-
-    var reader = new FileReader();
-
-    reader.addEventListener("load", function () {
-      var div = document.getElementById(file.name);
-      var image = new Image();
-      image.title = file.name;
-      image.src = this.result;
-
-      var widthInput = document.getElementById("width-input")
-      if (widthInput.value) {
-        image.width = widthInput.value;
+  function fileInputChanged() {
+    if (this.files.length === 1 && /\.zip$/i.test(this.files[0].name)) {
+      model.getEntries(this.files[0], function (entries) {
+        displayImagesFromZip(entries)
+      });
+    } else {
+      for (var i = 0; i < this.files.length; i++) {
+        if (/\.zip$/i.test(this.files[i].name)) {
+          return alert("You can choose only one zip file.");
+        } else if (!/\.(jpe?g|png|gif)$/i.test(this.files[i].name)) {
+          return alert(files[i].name + " is not an image");
+        }
       }
 
-      div.appendChild(image);
+      displayImages(this.files);
+    }
+  }
+
+  function displayImagesFromZip(entries) {
+    clearImages();
+    var images = document.getElementById('images');
+    var widthInput = document.getElementById("width-input");
+
+    entries.forEach(function (entry) {
+      displayImageFromZip(images, widthInput.value, entry)
+    });
+  }
+
+  function displayImageFromZip(images, width, entry) {
+    if (!/\.(jpe?g|png|gif)$/i.test(entry.filename)) {
+      return; // skip non-image files
+    }
+
+    prepareImageElement(images, entry.filename);
+
+    model.getEntryFile(entry, function (blobURL) {
+      putImage(entry.filename, blobURL, width)
+    });
+  }
+
+  function displayImages(files) {
+    clearImages();
+    var images = document.getElementById('images');
+    var widthInput = document.getElementById("width-input");
+
+    for (var i = 0; i < files.length; i++) {
+      displayImage(images, widthInput.value, files[i])
+    }
+  }
+
+  function displayImage(images, width, file) {
+    prepareImageElement(images, file.name);
+
+    var reader = new FileReader();
+    reader.addEventListener("load", function () {
+      putImage(file.name, this.result, width);
     }, false);
 
     reader.readAsDataURL(file);
   }
 
+  function prepareImageElement(parent, fileName) {
+    var div = document.createElement("div");
+    div.setAttribute("id", fileName);
+    parent.appendChild(div);
+  }
+
+  function putImage(name, blobURL, width) {
+    var div = document.getElementById(name);
+    var image = new Image();
+    image.title = name;
+    image.src = blobURL;
+
+    if (width) {
+      image.width = width;
+    }
+
+    div.appendChild(image);
+  }
+
   function resizeWidths(event) {
     if (event.keyCode === 13) { // Enter key pressed
       var widthInput = document.getElementById("width-input")
-      var preview = document.getElementById("preview");
-      var children = preview.children;
+      var images = document.getElementById("images");
+      var children = images.children;
 
       for (var i = 0; i < children.length; i++) {
         var image = children[i].firstChild
@@ -124,7 +178,36 @@
     }
   }
 
-  document.querySelector('#file-input').addEventListener("change", previewImages, false);
+  function onerror(message) {
+    alert(message);
+  }
+
+  var model = (function () {
+    var URL = window.webkitURL || window.mozURL || window.URL;
+
+    return {
+      getEntries: function (file, onend) {
+        zip.createReader(new zip.BlobReader(file), function (zipReader) {
+          zipReader.getEntries(onend);
+        }, onerror);
+      },
+      getEntryFile: function (entry, onend, onprogress) {
+        var writer, zipFileEntry;
+
+        function getData() {
+          entry.getData(writer, function (blob) {
+            var blobURL = URL.createObjectURL(blob);
+            onend(blobURL);
+          }, onprogress);
+        }
+
+        writer = new zip.BlobWriter();
+        getData();
+      }
+    };
+  })();
+
+  document.querySelector('#file-input').addEventListener("change", fileInputChanged, false);
   document.querySelector('#width-input').addEventListener("keyup", resizeWidths, false);
 
   document.querySelector('#btn-top').addEventListener("click", function () {
