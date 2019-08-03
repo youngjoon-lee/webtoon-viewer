@@ -55,7 +55,7 @@
     </nav>
   </header>
 
-  <div id="images"></div>
+  <div id="images" align="center"></div>
 
   <!-- Optional JavaScript -->
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -111,7 +111,7 @@
 
     entries.forEach(function (entry) {
       displayImageFromZip(images, widthInput.value, entry)
-    });
+    }); 
   }
 
   function displayImageFromZip(images, width, entry) {
@@ -239,7 +239,8 @@
     var y = 0;
     for (var i = 0; i < children.length; i++) {
       var image = children[i].firstChild;
-      ctx.drawImage(image, 0, y, image.width, image.height);
+      const x = (canvas.width - image.width) / 2
+      ctx.drawImage(image, x, y, image.width, image.height);
       y += image.height;
     }
 
