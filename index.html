@@ -111,7 +111,7 @@
 
     entries.forEach(function (entry) {
       displayImageFromZip(images, widthInput.value, entry)
-    }); 
+    });
   }
 
   function displayImageFromZip(images, width, entry) {
@@ -245,7 +245,14 @@
     }
 
     ctx.canvas.toBlob((blob) => {
-      window.open(URL.createObjectURL(blob));
+      if (blob) {
+        window.open(URL.createObjectURL(blob));
+      } else {
+        alert(`Max image canvas size exceeded
+Size: ${canvas.width}x${canvas.height}
+Please check the max canvas size of each web browser.
+https://github.com/jhildenbiddle/canvas-size#desktop`)
+      }
     }, 'image/png', 1);
   }
 
