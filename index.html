@@ -258,8 +258,14 @@
         toggleLogger(false);
         window.open(URL.createObjectURL(blob));
       } else {
-        console.log("fail to merge images in local. retrying it in remote...")
-        mergeImagesDisplayedInRemote(maxWidth, totalHeight, children);
+        let ret = confirm("Canvas is too big. Do you want to merge images by the remote server? It will take a bit of time.")
+        // if (ret) {
+        //   // logger will be disabled asynchronously after the server responds
+        //   mergeImagesDisplayedInRemote(maxWidth, totalHeight, children);
+        // } else {
+        //   toggleLogger(false);
+        // }
+        toggleLogger(false); //TODO: remove it
       }
     });
   }
