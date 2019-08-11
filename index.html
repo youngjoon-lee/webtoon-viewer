@@ -216,7 +216,6 @@
     };
   })();
 
-  // Reference: https://zocada.com/compress-resize-images-javascript-browser/
   function mergeImagesDisplayed() {
     var images = document.getElementById('images');
     var children = images.children;
@@ -231,29 +230,87 @@
       totalHeight += image.height;
     }
 
+    // async/await
+    // https://medium.com/javascript-in-plain-english/async-await-javascript-5038668ec6eb
+    mergeImagesDisplayedInLocal(maxWidth, totalHeight, children).then(blob => {
+      if (blob) {
+        console.log(blob)
+        window.open(URL.createObjectURL(blob));
+      } else {
+        console.log("fail to merge images in local. retrying it in remote...")
+        mergeImagesDisplayedInRemote(maxWidth, totalHeight, children);
+      }
+    });
+  }
+
+  async function mergeImagesDisplayedInLocal(width, height, elements) {
     const canvas = document.createElement('canvas');
-    canvas.width = maxWidth;
-    canvas.height = totalHeight;
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext('2d');
     var y = 0;
-    for (var i = 0; i < children.length; i++) {
-      var image = children[i].firstChild;
+    for (var i = 0; i < elements.length; i++) {
+      var image = elements[i].firstChild;
       const x = (canvas.width - image.width) / 2
       ctx.drawImage(image, x, y, image.width, image.height);
       y += image.height;
     }
 
-    ctx.canvas.toBlob((blob) => {
-      if (blob) {
-        window.open(URL.createObjectURL(blob));
-      } else {
-        alert(`Max image canvas size exceeded
+    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1));
+    return blob;
+  }
+
+  // http://christopher5106.github.io/web/2015/12/13/HTML5-file-image-upload-and-resizing-javascript-with-progress-bar.html
+  async function mergeImagesDisplayedInRemote(width, height, elements) {
+    var formData = new FormData();
+    formData.append("width", width);
+    formData.append("height", height);
+    formData.append("resize", 0);
+
+    for (var i = 0; i < elements.length; i++) {
+      var image = elements[i].firstChild;
+      let blob = await imageToBlob(image);
+      console.log(blob);
+      formData.append("files", blob);
+    }
+
+    var xhr = new XMLHttpRequest();
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
+    xhr.responseType = "blob";
+    xhr.onload = function (event) {
+      window.open(URL.createObjectURL(xhr.response));
+    }
+
+    xhr.upload.addEventListener("progress", function (evt) {
+      if (evt.lengthComputable) {
+        console.log("add upload event-listener: " + evt.loaded + "/" + evt.total);
+      }
+    }, false)
+
+    xhr.open("POST", "https://webtoon-service-2svnippdua-an.a.run.app/v1/merge");
+    xhr.send(formData)
+  }
+
+  // https://javascript.info/blob#image-to-blob
+  async function imageToBlob(image) {
+    let canvas = document.createElement('canvas');
+    canvas.width = image.width
+    canvas.height = image.height
+
+    let ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, image.width, image.height);
+
+    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1));
+    if (!blob) {
+      alert(`Max image canvas size exceeded while converting the image to blob.
 Size: ${canvas.width}x${canvas.height}
 Please check the max canvas size of each web browser.
-https://github.com/jhildenbiddle/canvas-size#desktop`)
-      }
-    }, 'image/png', 1);
+https://github.com/jhildenbiddle/canvas-size#desktop`);
+    }
+
+    return blob;
   }
 
   document.querySelector('#file-input').addEventListener("change", fileInputChanged, false);
