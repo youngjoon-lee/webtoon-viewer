@@ -258,7 +258,7 @@
         toggleLogger(false);
         window.open(URL.createObjectURL(blob));
       } else {
-        let ret = confirm("The images are too big to be merged locally. Do you want to merge images by the remote server? It will take a bit of time.")
+        let ret = confirm("그림이 커서 웹브라우저를 통해 merge 할 수는 없습니다. 서버로 전송한 후 merge 해야합니다. 진행하시겠습니까? 좀 오래걸릴 수 있습니다.")
         if (ret) {
           // logger will be disabled asynchronously after the server responds
           mergeImagesDisplayedInRemote(maxWidth, totalHeight, children);
@@ -337,9 +337,9 @@
 
     let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1));
     if (!blob) {
-      alert(`Max image canvas size exceeded while converting the image to blob.
+      alert(`단일 그림 최대 크기 초과.
 Size: ${canvas.width}x${canvas.height}
-Please check the max canvas size of each web browser.
+Please check the max size of each web browser.
 https://github.com/jhildenbiddle/canvas-size#desktop`);
     }
 
