@@ -20,6 +20,9 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/loader.css" type="text/css">
+
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
   <title>Webtoon Viewer</title>
@@ -55,6 +58,8 @@
     </nav>
   </header>
 
+  <div class="loading" id="loading">Loading&#8230;</div>
+
   <div id="images" align="center"></div>
 
   <!-- Optional JavaScript -->
@@ -78,6 +83,19 @@
 
 <script type="text/javascript">
   zip.workerScriptsPath = "lib/";
+
+  $(document).ready(function () {
+    toggleLogger(false);
+  });
+
+  function toggleLogger(show) {
+    document.getElementById('loading').hidden = show ? false : true;
+    document.getElementById('file-input').disabled = show;
+    document.getElementById('width-input').disabled = show;
+    document.getElementById('btn-top').disabled = show;
+    document.getElementById('btn-bottom').disabled = show;
+    document.getElementById('btn-merge').disabled = show;
+  }
 
   function clearImages() {
     var images = document.getElementById('images');
@@ -230,11 +248,14 @@
       totalHeight += image.height;
     }
 
+    toggleLogger(true);
+
     // async/await
     // https://medium.com/javascript-in-plain-english/async-await-javascript-5038668ec6eb
     mergeImagesDisplayedInLocal(maxWidth, totalHeight, children).then(blob => {
       if (blob) {
         console.log(blob)
+        toggleLogger(false);
         window.open(URL.createObjectURL(blob));
       } else {
         console.log("fail to merge images in local. retrying it in remote...")
@@ -280,17 +301,24 @@
     // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
     xhr.responseType = "blob";
     xhr.onload = function (event) {
+      toggleLogger(false);
       window.open(URL.createObjectURL(xhr.response));
     }
 
     xhr.upload.addEventListener("progress", function (evt) {
       if (evt.lengthComputable) {
-        console.log("add upload event-listener: " + evt.loaded + "/" + evt.total);
+        console.log("upload progress: " + evt.loaded + "/" + evt.total);
       }
-    }, false)
+    }, false);
+
+    xhr.addEventListener("progress", function (evt) {
+      if (evt.lengthComputable) {
+        console.log("download progress: " + evt.loaded + "/" + evt.total);
+      }
+    }, false);
 
     xhr.open("POST", "https://webtoon-service-2svnippdua-an.a.run.app/v1/merge");
-    xhr.send(formData)
+    xhr.send(formData);
   }
 
   // https://javascript.info/blob#image-to-blob
